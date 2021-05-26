@@ -1,0 +1,220 @@
+	      Well-known URI for application-specific purposes
+
+URI suffix: appspecific
+
+Author and change controller:
+   Bruce Leban, bruce@leban.us
+   (Willing to delegate change control to IETF.)
+
+Background (non-normative
+
+   All of the currently registered well-known URI suffixes are related to
+   specific protocols or specifically define how the URIs are to be used.
+   None provide a mechanism where an application can use a well-known URI for
+   application-specific purposes without registering a new suffix. This
+   proposal addresses that by designating a suffix for this purpose and
+   providing naming rules that give each application distinct paths.
+
+   It is often necessary for the owner of a domain to provide data to an
+   application. For example, the owner may need to verify ownership of the
+   domain. A common mechanism for doing this is to place a TXT record in the
+   DNS records for the domain containing a specific unguessable value
+   provided by the application. Another mechanism is to place a file on a web
+   server owned by the domain to verify ownership. This specification
+   provides a well-known place for such files.
+
+   While this specification is motivated by the ownership verification
+   scenario, it is not limited to that and there is no constraint imposed on
+   what may appear in these files. The only constraint is on which files are
+   associated with which applications.
+
+Terminology
+
+   For the purposes of this specification, the term CLIENT refers to any
+   party that owns a domain and wishes to use that domain with an
+   application. An APPLICATION refers to any party that wishes to provide
+   services to clients. A CLIENT DOMAIN is a domain owned by the CLIENT, and
+   an APPLICATION DOMAIN is a domain owned by the APPLICATION. The words
+   MUST, MUST NOT, SHOULD, RECOMMENDED, and MAY have their usual meanings as
+   per RFC 2119.
+
+Usage
+
+   To use the /.well-known/appspecific/ directory:
+
+   1. The application chooses a file name and provides that file name to the
+   client. The file name MUST be constructed following these rules:
+
+   1.1. The file name MUST be based on a domain name owned or controlled by
+   the application. An application that uses multiple domains may use any or
+   all of them for choosing the file name.
+
+   1.2. The file name MUST consist of only lowercase ASCII letters, numbers,
+   dash ("-"), and period (".") as usable in domain names, and each part
+   (between "."s) must follow the rules for domain name parts.
+
+   1.3. If the domain name is an IDN, then the Punycode form ("xn--") of the
+   domain name MUST be used.
+
+   1.4. The file name MUST be in Reverse DNS format representing an
+   application domain or subdomain. Reverse DNS representation reverses the
+   left-to-right order of the domain components but not the letters within
+   the individual components. For example, the reverse DNS representation of
+   example.corp is corp.example.
+
+   1.6. The file name MAY contain additional components after the domain
+   name, even if these corresponding domain records are not registered in
+   DNS. Such extra components MAY be fixed or MAY be random to prevent third
+   parties from being able to probe for the presence of one of these files.
+
+   1.6. The file name SHOULD end with a common file type extension, such as
+   .txt or .json. Which file types should be used is outside the scope of
+   this specification.
+
+   2. The application provides the client with information about what the
+   contents of the file need to be. Both the file contents and the
+   interpretation of the file presence and contents are outside the scope of
+   this specification.
+
+   3. The client MUST place the file in the /.well-known/appspecific/
+   directory on an http/https server for a client domain. The application
+   SHOULD require the client to use the https protocol to avoid an
+   intermediary attack.
+
+   3.1. If the client domain starts with "www." then the application MAY
+   treat a file present on the www domain as if it is equivalently present on
+   BOTH the www domain and the parent domain with the "www."  removed.
+
+   3.1.1. This rule MUST NOT be applied if the parent domain is a top-level
+   domain.
+
+   3.1.2. It is RECOMMENDED that this rule NOT be applied for any parent
+   domain on the Public Suffix list https://publicsuffix.org/.
+
+   3.2. The application MAY treat a file placed on a domain as equivalently
+   present on any subdomain. This rule may be combined with rule 3.1. The
+   application MAY require files placed on parent domains rather than
+   subdomains.
+
+   3.3. The application MAY use the presence of HTTP redirects from a first
+   domain to a second domain to decide when to treat a file present on the
+   second domain as present on the first domain.
+
+   3.4. The application MUST NOT treat a file as if it were present on any
+   other domain that does not conform to the rules specified in 3.1 or 3.2.
+
+   4. If more than one file is present on a domain, either by explicit
+   placement or implicitly by applying rules 3.1 or 3.2, or because multiple
+   files match the application domain, for example, both a .txt file and a
+   .json file, then it is up to the application how it interprets this. It
+   MAY process all files or it may choose to only process one of them.
+
+   5. The application reads the file and acts accordingly.
+
+Security considerations
+
+   An application that uses one of the optional rules in 3.1 or 3.2, should
+   carefully consider the security implications. As noted in RFC 8615,
+   applying metadata discovered in a well-known URI to resources other than
+   those co-located on the same origin may create security risks.
+   Applications are cautioned to carefully consider the tradeoffs and risks.
+
+
+APPENDIX (non-normative)
+
+   Rationales (section 1.4):
+
+      There are two reasons for using reverse DNS representation. First, it
+      allows addition of arbitrary distinguishing parts after the domain
+      name, and in particular a file extension. Second, when files are
+      presented in sorted order, all files for a particular application will
+      be listed together.
+
+EXAMPLES (non-normative)
+
+   Note on the examples:
+
+      Most of these examples use .corp as a TLD because that is a
+      reserved TLD that will never be delegated.
+
+   FILE NAME EXAMPLES - ALLOWED:
+
+      corp.application.txt              - domain and common file type
+                                          extension, 1.2, 1.4, 1.6.
+
+      corp.application.json             - domain and common file type
+                                          extension, 1.2, 1.4, 1.6.
+
+      corp.application.app.txt          - subdomain, 1.4.
+
+      corp.application.primary.txt      - fixed additional component, 1.5.
+
+      corp.application.3ta0in5rd1u.txt  - random additional component, 1.5.
+
+      corp.xn--jxalpdlp.txt             - IDN uses Punycode as required for IDN, 1.3.
+
+   FILE NAME EXAMPLES - NOT ALLOWED:
+
+      corp.APPLICATION.txt       - uppercase not allowed, 1.2.
+
+      corp..application..txt     - consecutive periods not allowed in domain
+                                   name, 1.2.
+
+      corp.appli_cation.txt      - only lowercase, digit, dash, and period
+                                   allowed, 1.2.
+
+      corp.-example-.txt         - domain part cannot start or end with dash, 1.2.
+
+      corp.application/data.txt  - directory path character not allowed, 1.2.
+
+      x.application.txt          - application.x is not a registered domain
+                                   (.x is not a TLD), 1.4.
+
+      application.corp.txt       - apparently not in reverse DNS format
+                                   (.application is not a TLD), 1.4.
+
+      corp.δοκιμή.txt            - IDN must use Punycode for domain name
+
+      corp.application.李        - file extension must use Punycode
+
+   WWW USAGE EXAMPLES (section 3.1-3):
+
+      File placed here     Treated as if     Explanation
+                           present here?
+
+      www.client.corp      client.corp       - YES, optionally, 3.1.
+      client.corp          app.client.corp   - YES, optionally, 3.2.
+      www.client.corp      app.client.corp   - YES, optionally, 3.1 and 3.2.
+      www.example.co.uk    example.co.uk     - YES, optionally, 3.1
+      www.org              org               - NO, org is a TLD, 3.1.1.
+      www.co.uk            co.uk             - NO, co.uk is on public suffix list, 3.1.2.
+      app.client.net       client.net        - NO, only www can be removed, 3.4.
+
+   FULL PATH EXAMPLE:
+
+      This file is published by client.corp for application.corp:
+
+         https://www.client.corp/.well-known/appspecific/corp.application.txt
+
+     It applies to the www.client.corp domain and optionally to the client.corp domain.
+
+References
+
+   [RFC2119]  Bradner, S., "Key words for use in RFCs to Indicate
+              Requirement Levels", BCP 14, RFC 2119,
+              DOI 10.17487/RFC2119, March 1997,
+              <https://www.rfc-editor.org/info/rfc2119>.
+
+   [RFC8615]  Nottingham, M., "Well-Known Uniform Resource Identifiers
+              (URIs)", RFC 8615, DOI 10.17487/RFC8615, May 2019,
+              <https://www.rfc-editor.org/info/rfc8615>.
+
+   [WELL-KNOWN-REGISTRY]
+              "Well-Known URIs",
+	      <https://www.iana.org/assignments/well-known-uris/>.
+
+Copyright Notice
+
+   Copyright 2021 the persons identified as the document authors. All rights reserved.
+
+Last revised: 2021-05-25
